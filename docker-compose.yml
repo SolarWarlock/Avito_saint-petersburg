@@ -1,0 +1,125 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: avito_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+      - ./sql/postgres/01_init_schema.sql:/docker-entrypoint-initdb.d/02_init_schema.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - avito_net
+
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: avito_clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: avito_marts
+      CLICKHOUSE_USER: avito_user
+      CLICKHOUSE_PASSWORD: avito_password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "8123:8123" # HTTP interface (Superset & Python)
+      - "9000:9000" # Native TCP client
+    volumes:
+      - ./sql/clickhouse/01_init_marts.sql:/docker-entrypoint-initdb.d/01_init_marts.sql:ro
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - avito_net
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: avito_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - avito_net
+
+
+  superset-init:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    container_name: avito_superset_init
+    user: root
+    entrypoint: ["/bin/bash", "/app/docker-init.sh"]
+    environment:
+      SUPERSET_SECRET_KEY: avito_bootcamp_super_secret_key_2026
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset_password@postgres:5432/superset
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      ADMIN_EMAIL: admin@avito.ru
+      PYTHONPATH: /app/pythonpath
+    volumes:
+      - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ./docker/superset/docker-init.sh:/app/docker-init.sh:ro
+      - superset_home:/app/superset_home
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - avito_net
+
+
+  # Apache Superset Web Server (UI at http://localhost:8088)
+  superset:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    container_name: avito_superset
+    restart: unless-stopped
+    command: ["/app/docker/entrypoints/run-server.sh"]
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: avito_bootcamp_super_secret_key_2026
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset_password@postgres:5432/superset
+      PYTHONPATH: /app/pythonpath
+    volumes:
+      - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - superset_home:/app/superset_home
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+      clickhouse:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - avito_net
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  superset_home:
+
+networks:
+  avito_net:
+    driver: bridge
