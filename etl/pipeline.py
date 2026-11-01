@@ -333,7 +333,7 @@ def load_to_clickhouse(df: pd.DataFrame, ch_client):
 
 
 def main():
-    data_file = sys.argv[1] if len(sys.argv) > 1 else "data/raw/avito_listings_sample.xlsx"
+    data_file = sys.argv[1] if len(sys.argv) > 1 else "data/raw/avito_clean_final_full.xlsx"
     if not os.path.exists(data_file):
         logger.error(f"File not found: {data_file}")
         sys.exit(1)

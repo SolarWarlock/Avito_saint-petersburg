@@ -136,11 +136,11 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Район Санкт-Петербурга",
-                "x_axis_title_margin": 50,
+                "x_axis_title_margin": 65,
                 "y_axis_title": "Медиана ₽ / м²",
                 "y_axis_title_margin": 65,
                 "y_axis_title_position": "Left",
-                "xAxisLabelRotation": 0,
+                "xAxisLabelRotation": -35,
                 "xAxisLabelInterval": 0,
                 "truncateXAxis": False,
                 "order_desc": True
@@ -434,7 +434,7 @@ with app.app_context():
         '    </div>'
         '    <h1 style="margin: 0; font-size: 23px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Мониторинг рынка жилой недвижимости Санкт-Петербурга</h1>'
         '    <div style="margin-top: 5px; font-size: 13px; color: rgba(255,255,255,0.92);">'
-        '      <strong>2 980 валидированных объектов</strong> без дублей и аномалий. Выберите фильтры на левой панели для интерактивного анализа.'
+        '      <strong>30 994 валидированных объекта</strong> без дублей и аномалий. Выберите фильтры на левой панели для интерактивного анализа.'
         '    </div>'
         '  </div>'
         '</div>'
