@@ -426,15 +426,15 @@ with app.app_context():
             "params": {
                 "datasource": f"{deals_id}__table",
                 "viz_type": "big_number_total",
-                "metric": "avg_discount_pct",
-                "subheader": "Средняя скидка на отобранный лот",
-                "y_axis_format": ".1f%",
+                "metric": "avg_discount_ratio",
+                "subheader": "Средняя скидка к медиане кластера",
+                "y_axis_format": ".1%",
                 "time_range": "No filter"
             },
             "query_context": {
                 "datasource": {"id": deals_id, "type": "table"},
                 "force": False,
-                "queries": [{"metrics": ["avg_discount_pct"], "is_timeseries": False}],
+                "queries": [{"metrics": ["avg_discount_ratio"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
@@ -446,15 +446,15 @@ with app.app_context():
             "params": {
                 "datasource": f"{deals_id}__table",
                 "viz_type": "big_number_total",
-                "metric": "max_discount_pct",
+                "metric": "max_discount_ratio",
                 "subheader": "Рекордная недооценка лота",
-                "y_axis_format": ".1f%",
+                "y_axis_format": ".1%",
                 "time_range": "No filter"
             },
             "query_context": {
                 "datasource": {"id": deals_id, "type": "table"},
                 "force": False,
-                "queries": [{"metrics": ["max_discount_pct"], "is_timeseries": False}],
+                "queries": [{"metrics": ["max_discount_ratio"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
@@ -467,8 +467,8 @@ with app.app_context():
                 "datasource": f"{deals_id}__table",
                 "viz_type": "big_number_total",
                 "metric": "total_potential_gain",
-                "subheader": "Суммарный потенциал капитализации",
-                "y_axis_format": "$,.0f",
+                "subheader": "₽ Суммарная инвестиционная выгода",
+                "y_axis_format": ",.0f",
                 "time_range": "No filter"
             },
             "query_context": {
@@ -655,39 +655,20 @@ with app.app_context():
     # 3. Assemble Dashboard Layout with TABS
     header_html = (
         '<div style="background: linear-gradient(135deg, #0077CC 0%, #00AAFF 60%, #00C48C 100%); '
-        'border-radius: 12px; padding: 20px 24px; color: #ffffff; '
-        'box-shadow: 0 4px 20px rgba(0, 170, 255, 0.22); '
-        'display: flex; justify-content: space-between; align-items: center;">'
+        'border-radius: 12px; padding: 12px 20px; color: #ffffff; '
+        'box-shadow: 0 4px 16px rgba(0, 170, 255, 0.18); '
+        'display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">'
         '  <div>'
-        '    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">'
-        '      <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #97D700; box-shadow: 0 0 6px #97D700;"></span>'
-        '      <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #FF335F; box-shadow: 0 0 6px #FF335F;"></span>'
-        '      <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #A521FF; box-shadow: 0 0 6px #A521FF;"></span>'
-        '      <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #FFB703; box-shadow: 0 0 6px #FFB703;"></span>'
-        '      <span style="font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.95); margin-left: 6px;">АВИТО НЕДВИЖИМОСТЬ &bull; САНКТ-ПЕТЕРБУРГ</span>'
+        '    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">'
+        '      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #97D700;"></span>'
+        '      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #FF335F;"></span>'
+        '      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #A521FF;"></span>'
+        '      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #FFB703;"></span>'
+        '      <span style="font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.95); margin-left: 4px;">АВИТО НЕДВИЖИМОСТЬ &bull; САНКТ-ПЕТЕРБУРГ</span>'
         '    </div>'
-        '    <h1 style="margin: 0; font-size: 23px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Мониторинг рынка жилой недвижимости Санкт-Петербурга</h1>'
-        '    <div style="margin-top: 5px; font-size: 13px; color: rgba(255,255,255,0.92);">'
-        '      <strong>30 994 валидированных объекта</strong> без дублей и аномалий. Используйте вкладки ниже для переключения между мониторингом и инвест-аналитикой.'
-        '    </div>'
-        '  </div>'
-        '</div>'
-    )
-
-    prod_header_html = (
-        '<div style="background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #00AAFF 100%); '
-        'border-radius: 12px; padding: 18px 24px; color: #ffffff; '
-        'box-shadow: 0 4px 18px rgba(0, 119, 204, 0.2); '
-        'display: flex; justify-content: space-between; align-items: center;">'
-        '  <div>'
-        '    <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #00E5FF; margin-bottom: 4px;">'
-        '      ⚡ ПРОДУКТОВЫЙ МОДУЛЬ &bull; АЛГОРИТМИЧЕСКИЙ СКОРИНГ'
-        '    </div>'
-        '    <h2 style="margin: 0; font-size: 19px; font-weight: 800; color: #ffffff;">'
-        '      Инвестиционные находки под флиппинг, матрица этажей и арбитраж отделки'
-        '    </h2>'
-        '    <div style="margin-top: 4px; font-size: 13px; color: rgba(255,255,255,0.88);">'
-        '      Алгоритм находит лоты с дисконтом &ge; 25% относительно локального микрокластера (Район + Метро + Комнатность). Оценивайте штраф первого этажа и окупаемость ремонта.'
+        '    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">Аналитическая платформа рынка жилой недвижимости</h1>'
+        '    <div style="margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.92);">'
+        '      <strong>30 994 валидированных объекта</strong> без дублей и аномалий. Переключайтесь между мониторингом рынка и инвестиционным модулем.'
         '    </div>'
         '  </div>'
         '</div>'
@@ -730,7 +711,7 @@ with app.app_context():
             "id": "MARKDOWN-header",
             "meta": {
                 "code": header_html,
-                "height": 12,
+                "height": 11,
                 "width": 12
             },
             "parents": ["ROOT_ID", "GRID_ID", "ROW-header"],
@@ -760,7 +741,6 @@ with app.app_context():
         },
         "TAB-product": {
             "children": [
-                "ROW-prod-header",
                 "ROW-prod-kpis",
                 "ROW-prod-deals",
                 "ROW-prod-charts"
@@ -771,26 +751,6 @@ with app.app_context():
             },
             "parents": ["ROOT_ID", "GRID_ID", "TABS-main"],
             "type": "TAB"
-        },
-        "ROW-prod-header": {
-            "children": ["MARKDOWN-prod-header"],
-            "id": "ROW-prod-header",
-            "meta": {
-                "background": "BACKGROUND_TRANSPARENT"
-            },
-            "parents": ["ROOT_ID", "GRID_ID", "TABS-main", "TAB-product"],
-            "type": "ROW"
-        },
-        "MARKDOWN-prod-header": {
-            "children": [],
-            "id": "MARKDOWN-prod-header",
-            "meta": {
-                "code": prod_header_html,
-                "height": 12,
-                "width": 12
-            },
-            "parents": ["ROOT_ID", "GRID_ID", "TABS-main", "TAB-product", "ROW-prod-header"],
-            "type": "MARKDOWN"
         }
     }
 
@@ -823,14 +783,14 @@ with app.app_context():
         }
 
     # Tab 1: Market Monitoring
-    add_tab_row("TAB-monitoring", "ROW-kpis", [(s, 3) for s in t1_kpis], row_height=30)
+    add_tab_row("TAB-monitoring", "ROW-kpis", [(s, 3) for s in t1_kpis], row_height=36)
     add_tab_row("TAB-monitoring", "ROW-market", [(t1_market[0], 8), (t1_market[1], 4)], row_height=54)
     add_tab_row("TAB-monitoring", "ROW-metro-era", [(t1_metro_era[0], 6), (t1_metro_era[1], 6)], row_height=54)
     add_tab_row("TAB-monitoring", "ROW-reno-top", [(t1_reno_top[0], 6), (t1_reno_top[1], 6)], row_height=54)
     add_tab_row("TAB-monitoring", "ROW-table", [(t1_table, 12)], row_height=65)
 
     # Tab 2: Product & Investment Analytics
-    add_tab_row("TAB-product", "ROW-prod-kpis", [(s, 3) for s in t2_kpis], row_height=30)
+    add_tab_row("TAB-product", "ROW-prod-kpis", [(s, 3) for s in t2_kpis], row_height=36)
     add_tab_row("TAB-product", "ROW-prod-deals", [(t2_deals, 12)], row_height=65)
     add_tab_row("TAB-product", "ROW-prod-charts", [(t2_charts[0], 6), (t2_charts[1], 6)], row_height=54)
 
@@ -1150,11 +1110,23 @@ body {
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     padding: 8px !important;
+    overflow: hidden !important;
 }
 
 .dashboard-component-chart-holder:hover {
     box-shadow: 0 8px 24px rgba(0, 170, 255, 0.12) !important;
     border-color: #BAE7FF !important;
+}
+
+/* Prevent scrollbars everywhere */
+.dashboard-markdown,
+.dashboard-markdown-card,
+.slice_container {
+    overflow: hidden !important;
+}
+
+.dashboard-markdown * {
+    box-sizing: border-box !important;
 }
 
 /* Chart Title Headers */
@@ -1167,17 +1139,19 @@ body {
 
 /* Big Number KPI Metrics */
 .slice_container .big-number {
-    font-size: 38px !important;
+    font-size: 32px !important;
     font-weight: 800 !important;
     color: #00AAFF !important;
-    letter-spacing: -1px !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1.15 !important;
 }
 
 .slice_container .subheader {
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 500 !important;
     color: #6B7280 !important;
-    margin-top: 4px !important;
+    margin-top: 3px !important;
+    line-height: 1.2 !important;
 }
 
 /* Native Filters Sidebar */

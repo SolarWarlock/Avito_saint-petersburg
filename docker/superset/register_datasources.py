@@ -111,17 +111,20 @@ with app.app_context():
         db.session.commit()
         print("Registered 'mart_underpriced_deals' dataset.")
 
-        try:
-            deals_dataset.fetch_metadata()
-            db.session.commit()
-            print("Fetched metadata columns for 'mart_underpriced_deals'.")
-        except Exception as e:
-            print(f"Metadata fetch warning: {e}")
+    # Always fetch latest columns
+    try:
+        deals_dataset.fetch_metadata()
+        db.session.commit()
+        print("Fetched metadata columns for 'mart_underpriced_deals'.")
+    except Exception as e:
+        print(f"Metadata fetch warning: {e}")
 
     # Add custom metrics for underpriced deals
     existing_deal_metrics = {m.metric_name for m in deals_dataset.metrics}
     deal_metrics_to_add = [
         ("deals_count", "count()", "Число найденных лотов"),
+        ("avg_discount_ratio", "avg(discount_ratio)", "Средний дисконт к району (доля)"),
+        ("max_discount_ratio", "max(discount_ratio)", "Максимальный дисконт (доля)"),
         ("avg_discount_pct", "round(avg(discount_pct), 1)", "Средний дисконт к району (%)"),
         ("max_discount_pct", "round(max(discount_pct), 1)", "Максимальный дисконт (%)"),
         ("total_potential_gain", "round(sum(potential_gain_rub))", "Суммарный инвестиционный потенциал (₽)")
@@ -136,6 +139,12 @@ with app.app_context():
             )
             db.session.add(metric)
             print(f"Added metric: {m_name} ({m_desc})")
+        else:
+            # Update expression if already exists
+            met_obj = db.session.query(SqlMetric).filter_by(table_id=deals_dataset.id, metric_name=m_name).first()
+            if met_obj:
+                met_obj.expression = m_expr
+                met_obj.verbose_name = m_desc
 
     db.session.commit()
 

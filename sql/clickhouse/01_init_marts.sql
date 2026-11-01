@@ -78,6 +78,7 @@ ranked_deals AS (
         round(f.price_per_sqm)                  AS price_per_sqm,
         round(c.cluster_median_sqm)             AS cluster_median_sqm,
         round((1 - f.price_per_sqm / c.cluster_median_sqm) * 100, 1) AS discount_pct,
+        round((1 - f.price_per_sqm / c.cluster_median_sqm), 4)       AS discount_ratio,
         round((c.cluster_median_sqm - f.price_per_sqm) * f.total_area) AS potential_gain_rub,
         row_number() OVER (
             PARTITION BY f.district 
@@ -108,6 +109,7 @@ SELECT
     price_per_sqm,
     cluster_median_sqm,
     discount_pct,
+    discount_ratio,
     potential_gain_rub,
     deal_rank
 FROM ranked_deals
