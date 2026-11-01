@@ -33,7 +33,18 @@ with app.app_context():
                 "viz_type": "big_number_total",
                 "metric": "listings_count",
                 "subheader": "Уникальные объекты после дедупликации",
-                "y_axis_format": ",d"
+                "y_axis_format": ",d",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "metrics": ["listings_count"],
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -44,7 +55,18 @@ with app.app_context():
                 "viz_type": "big_number_total",
                 "metric": "median_price_per_sqm",
                 "subheader": "Рублей за 1 м²",
-                "y_axis_format": ",.0f"
+                "y_axis_format": ",.0f",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "metrics": ["median_price_per_sqm"],
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -55,7 +77,18 @@ with app.app_context():
                 "viz_type": "big_number_total",
                 "metric": "median_total_price",
                 "subheader": "Медианная стоимость объекта",
-                "y_axis_format": ",.0f"
+                "y_axis_format": ",.0f",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "metrics": ["median_total_price"],
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -66,7 +99,18 @@ with app.app_context():
                 "viz_type": "big_number_total",
                 "metric": "median_area",
                 "subheader": "Квадратных метров (м²)",
-                "y_axis_format": ".1f"
+                "y_axis_format": ".1f",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "metrics": ["median_area"],
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
 
@@ -77,14 +121,33 @@ with app.app_context():
             "params": {
                 "datasource": f"{dataset_id}__table",
                 "viz_type": "echarts_timeseries_bar",
+                "x_axis": "district",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
                 "metrics": ["median_price_per_sqm"],
-                "groupby": ["district"],
+                "groupby": [],
                 "orientation": "vertical",
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Район Санкт-Петербурга",
                 "y_axis_title": "Медиана ₽ / м²",
                 "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["district"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -97,7 +160,19 @@ with app.app_context():
                 "groupby": ["rooms_count"],
                 "donut": True,
                 "show_labels": True,
-                "labels_type": "key_percent"
+                "labels_type": "key_percent",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["rooms_count"],
+                    "metrics": ["listings_count"],
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
 
@@ -108,12 +183,33 @@ with app.app_context():
             "params": {
                 "datasource": f"{dataset_id}__table",
                 "viz_type": "echarts_timeseries_bar",
+                "x_axis": "metro_time_group",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
                 "metrics": ["median_price_per_sqm"],
-                "groupby": ["metro_time_group"],
+                "groupby": [],
+                "orientation": "vertical",
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Время пешком до метро",
-                "y_axis_title": "Медиана ₽ / м²"
+                "y_axis_title": "Медиана ₽ / м²",
+                "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["metro_time_group"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -122,12 +218,33 @@ with app.app_context():
             "params": {
                 "datasource": f"{dataset_id}__table",
                 "viz_type": "echarts_timeseries_bar",
+                "x_axis": "building_era",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
                 "metrics": ["median_price_per_sqm"],
-                "groupby": ["building_era"],
+                "groupby": [],
+                "orientation": "vertical",
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Период постройки",
-                "y_axis_title": "Медиана ₽ / м²"
+                "y_axis_title": "Медиана ₽ / м²",
+                "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["building_era"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
 
@@ -138,12 +255,33 @@ with app.app_context():
             "params": {
                 "datasource": f"{dataset_id}__table",
                 "viz_type": "echarts_timeseries_bar",
+                "x_axis": "condition_unified",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
                 "metrics": ["median_price_per_sqm"],
-                "groupby": ["condition_unified"],
+                "groupby": [],
+                "orientation": "vertical",
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Тип отделки / ремонта",
-                "y_axis_title": "Медиана ₽ / м²"
+                "y_axis_title": "Медиана ₽ / м²",
+                "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["condition_unified"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
         {
@@ -156,7 +294,22 @@ with app.app_context():
                 "metrics": ["median_price_per_sqm", "listings_count", "median_total_price"],
                 "row_limit": 15,
                 "order_desc": True,
-                "include_search": True
+                "include_search": True,
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["metro1"],
+                    "metrics": ["median_price_per_sqm", "listings_count", "median_total_price"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 15,
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         },
 
@@ -175,7 +328,25 @@ with app.app_context():
                 "order_by_cols": ['["price_per_sqm", false]'],
                 "row_limit": 50,
                 "include_search": True,
-                "table_timestamp_format": "smart_date"
+                "table_timestamp_format": "smart_date",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": dataset_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": [
+                        "item_id", "title", "district", "metro1", "time1", 
+                        "price", "price_per_sqm", "total_area", "rooms_count", 
+                        "condition_unified", "building_era", "market_type", "object_type"
+                    ],
+                    "orderby": [["price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 50,
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
             }
         }
     ]
@@ -183,13 +354,21 @@ with app.app_context():
     created_slices = []
     for c_def in charts_def:
         slice_obj = db.session.query(Slice).filter_by(slice_name=c_def["slice_name"]).first()
+        qc_dict = c_def.get("query_context")
+        if qc_dict:
+            qc_dict["form_data"] = c_def["params"]
+            qc_json = json.dumps(qc_dict)
+        else:
+            qc_json = None
+
         if not slice_obj:
             slice_obj = Slice(
                 slice_name=c_def["slice_name"],
                 viz_type=c_def["viz_type"],
                 datasource_type="table",
                 datasource_id=dataset_id,
-                params=json.dumps(c_def["params"])
+                params=json.dumps(c_def["params"]),
+                query_context=qc_json
             )
             db.session.add(slice_obj)
             db.session.commit()
@@ -197,6 +376,7 @@ with app.app_context():
         else:
             slice_obj.params = json.dumps(c_def["params"])
             slice_obj.viz_type = c_def["viz_type"]
+            slice_obj.query_context = qc_json
             db.session.commit()
             print(f"Updated Chart: {slice_obj.slice_name} (ID: {slice_obj.id})")
         created_slices.append(slice_obj)
