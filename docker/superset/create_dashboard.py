@@ -4,7 +4,6 @@ Creates the complete Avito Real Estate Analytics Dashboard structure.
 """
 
 import json
-import uuid
 from superset.app import create_app
 
 app = create_app()
@@ -22,10 +21,6 @@ with app.app_context():
 
     dataset_id = table.id
     print(f"Using dataset: {table.table_name} (ID: {dataset_id})")
-
-    # Helper function to generate unique component IDs for layout
-    def uid(prefix="CHART"):
-        return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
     # 2. Define All Charts
     charts_def = [
@@ -206,55 +201,63 @@ with app.app_context():
             print(f"Updated Chart: {slice_obj.slice_name} (ID: {slice_obj.id})")
         created_slices.append(slice_obj)
 
-    # 3. Assemble Dashboard Layout
+    # 3. Assemble Dashboard Layout exactly matching Superset v2 schema
     kpi_slices = created_slices[0:4]
     market_slices = created_slices[4:6]
     metro_era_slices = created_slices[6:8]
     reno_top_slices = created_slices[8:10]
     table_slice = created_slices[10]
 
-    # Layout generation using 12-column grid
     position_data = {
         "DASHBOARD_VERSION_KEY": "v2",
-        "ROOT_ID": {"children": ["GRID_ID"], "id": "ROOT_ID", "type": "ROOT"},
+        "ROOT_ID": {
+            "children": ["GRID_ID"],
+            "id": "ROOT_ID",
+            "type": "ROOT"
+        },
+        "HEADER_ID": {
+            "id": "HEADER_ID",
+            "meta": {
+                "text": "Авито Недвижимость — Анализ рынка жилья (Санкт-Петербург)"
+            },
+            "type": "HEADER"
+        },
         "GRID_ID": {
             "children": [
-                "HEADER_MARKDOWN_ROW",
-                "KPI_ROW",
-                "MARKET_ROW",
-                "METRO_ERA_ROW",
-                "RENO_TOP_ROW",
-                "TABLE_ROW"
+                "ROW-header",
+                "ROW-kpis",
+                "ROW-market",
+                "ROW-metro-era",
+                "ROW-reno-top",
+                "ROW-table"
             ],
             "id": "GRID_ID",
             "parents": ["ROOT_ID"],
             "type": "GRID"
         },
-        # Header text
-        "HEADER_MARKDOWN_ROW": {
-            "children": ["HEADER_MARKDOWN_COL"],
-            "id": "HEADER_MARKDOWN_ROW",
+        "ROW-header": {
+            "children": ["MARKDOWN-header"],
+            "id": "ROW-header",
+            "meta": {
+                "background": "BACKGROUND_TRANSPARENT"
+            },
             "parents": ["ROOT_ID", "GRID_ID"],
             "type": "ROW"
         },
-        "HEADER_MARKDOWN_COL": {
-            "children": ["HEADER_MARKDOWN_CARD"],
-            "id": "HEADER_MARKDOWN_COL",
-            "parents": ["ROOT_ID", "GRID_ID", "HEADER_MARKDOWN_ROW"],
-            "type": "COLUMN",
-            "meta": {"width": 12}
-        },
-        "HEADER_MARKDOWN_CARD": {
-            "id": "HEADER_MARKDOWN_CARD",
-            "parents": ["ROOT_ID", "GRID_ID", "HEADER_MARKDOWN_ROW", "HEADER_MARKDOWN_COL"],
-            "type": "MARKDOWN",
+        "MARKDOWN-header": {
+            "children": [],
+            "id": "MARKDOWN-header",
             "meta": {
-                "code": "### 🏠 Авито Недвижимость: Мониторинг рынка жилья и ценообразования (Санкт-Петербург)\n*Аналитическая витрина DWH на стеке PostgreSQL 15 + ClickHouse MergeTree + Apache Superset. Очищено от выбросов и дедуплицировано по естественному `item_id`.*"
-            }
+                "code": "### 🏠 Авито Недвижимость: Мониторинг рынка жилья и ценообразования (Санкт-Петербург)\n*Аналитическая витрина DWH на стеке PostgreSQL 15 + ClickHouse MergeTree + Apache Superset. Очищено от выбросов и дедуплицировано по естественному `item_id`.*",
+                "height": 20,
+                "width": 12
+            },
+            "parents": ["ROOT_ID", "GRID_ID", "ROW-header"],
+            "type": "MARKDOWN"
         }
     }
 
-    # Helper to create a row of charts
+    # Helper to add standard chart rows
     def add_chart_row(row_id, slice_width_pairs):
         children = []
         for sl, w in slice_width_pairs:
@@ -263,79 +266,38 @@ with app.app_context():
             position_data[chart_key] = {
                 "children": [],
                 "id": chart_key,
-                "parents": ["ROOT_ID", "GRID_ID", row_id],
-                "type": "CHART",
                 "meta": {
                     "chartId": sl.id,
+                    "height": 50,
                     "sliceName": sl.slice_name,
-                    "width": w,
-                    "height": 50
-                }
+                    "width": w
+                },
+                "parents": ["ROOT_ID", "GRID_ID", row_id],
+                "type": "CHART"
             }
         position_data[row_id] = {
             "children": children,
             "id": row_id,
+            "meta": {
+                "background": "BACKGROUND_TRANSPARENT"
+            },
             "parents": ["ROOT_ID", "GRID_ID"],
             "type": "ROW"
         }
 
-    add_chart_row("KPI_ROW", [(s, 3) for s in kpi_slices])
-    add_chart_row("MARKET_ROW", [(market_slices[0], 8), (market_slices[1], 4)])
-    add_chart_row("METRO_ERA_ROW", [(metro_era_slices[0], 6), (metro_era_slices[1], 6)])
-    add_chart_row("RENO_TOP_ROW", [(reno_top_slices[0], 6), (reno_top_slices[1], 6)])
-    add_chart_row("TABLE_ROW", [(table_slice, 12)])
+    add_chart_row("ROW-kpis", [(s, 3) for s in kpi_slices])
+    add_chart_row("ROW-market", [(market_slices[0], 8), (market_slices[1], 4)])
+    add_chart_row("ROW-metro-era", [(metro_era_slices[0], 6), (metro_era_slices[1], 6)])
+    add_chart_row("ROW-reno-top", [(reno_top_slices[0], 6), (reno_top_slices[1], 6)])
+    add_chart_row("ROW-table", [(table_slice, 12)])
 
-    # 4. Configure Native Filters
-    native_filters = [
-        {
-            "id": "NATIVE_FILTER_DISTRICT",
-            "name": "Район СПб",
-            "filterType": "filter_select",
-            "targets": [{"datasetId": dataset_id, "column": {"name": "district"}}],
-            "defaultDataMask": {},
-            "cascadeParentIds": [],
-            "scope": {"rootPath": ["ROOT_ID"], "excluded": []},
-            "type": "NATIVE_FILTER"
-        },
-        {
-            "id": "NATIVE_FILTER_ROOMS",
-            "name": "Количество комнат",
-            "filterType": "filter_select",
-            "targets": [{"datasetId": dataset_id, "column": {"name": "rooms_count"}}],
-            "defaultDataMask": {},
-            "cascadeParentIds": [],
-            "scope": {"rootPath": ["ROOT_ID"], "excluded": []},
-            "type": "NATIVE_FILTER"
-        },
-        {
-            "id": "NATIVE_FILTER_MARKET",
-            "name": "Тип рынка (Новостройка / Вторичка)",
-            "filterType": "filter_select",
-            "targets": [{"datasetId": dataset_id, "column": {"name": "market_type"}}],
-            "defaultDataMask": {},
-            "cascadeParentIds": [],
-            "scope": {"rootPath": ["ROOT_ID"], "excluded": []},
-            "type": "NATIVE_FILTER"
-        },
-        {
-            "id": "NATIVE_FILTER_OBJECT",
-            "name": "Тип объекта (Квартира / Апартаменты / Доля)",
-            "filterType": "filter_select",
-            "targets": [{"datasetId": dataset_id, "column": {"name": "object_type"}}],
-            "defaultDataMask": {},
-            "cascadeParentIds": [],
-            "scope": {"rootPath": ["ROOT_ID"], "excluded": []},
-            "type": "NATIVE_FILTER"
-        }
-    ]
-
+    # 4. Clean Dashboard Metadata
     dashboard_metadata = {
         "timed_refresh_immune_slices": [],
         "expanded_slices": {},
         "refresh_frequency": 0,
         "default_filters": "{}",
         "color_scheme": "supersetColors",
-        "native_filter_configuration": native_filters,
         "chart_configuration": {}
     }
 

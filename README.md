@@ -128,3 +128,4 @@ python etl/pipeline.py data/raw/avito_listings_sample.xlsx
 │   └── avito_spb_dashboard_export.zip # Экспортированный архив дашборда Superset
 └── .gitignore                      # Исключения Git
 ```
+
