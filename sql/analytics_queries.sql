@@ -246,3 +246,4 @@ LEFT JOIN core.dim_district d ON l.district_id = d.district_id
 WHERE l.is_active = TRUE
 GROUP BY d.district_name
 ORDER BY total_active_listings DESC;
+

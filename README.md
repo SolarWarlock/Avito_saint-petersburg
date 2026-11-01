@@ -80,26 +80,48 @@ flowchart TD
 
 ## 🚀 Быстрый запуск проекта
 
-### 1. Требования
+### Вариант 1: Автоматический One-Click запуск (PowerShell)
+Для полного развертывания проекта «из коробки» (проверка Docker, поднятие стека, прогон ETL на 31k записей, автосборка дашборда в Superset и запуск 12 тестов Data Quality) достаточно выполнить одну команду:
+
+```powershell
+.\run_all.ps1
+```
+
+---
+
+### Вариант 2: Пошаговый запуск
+
+#### 1. Требования
 * Docker Desktop & Docker Compose
 * Python 3.10+
 
-### 2. Клонирование и запуск окружения
+#### 2. Клонирование и запуск окружения
 ```bash
 # Запуск контейнеров: Postgres, ClickHouse, Redis, Superset
 docker compose up -d
 ```
 
-### 3. Запуск ETL-пайплайна
+#### 3. Установка зависимостей и запуск ETL
 ```bash
-# Установка зависимостей скрипта
+# Установка Python-библиотек
 pip install -r etl/requirements.txt
 
 # Прогон очистки данных и загрузки в DWH
 python etl/pipeline.py data/raw/avito_clean_final_full.xlsx
 ```
 
-### 4. Вход в Apache Superset
+#### 4. Сборка дашборда и стилей в Superset
+```bash
+docker cp docker/superset/create_dashboard.py avito_superset:/app/create_dashboard.py
+docker exec -i avito_superset python /app/create_dashboard.py
+```
+
+#### 5. Прогон тестов качества данных (pytest)
+```bash
+pytest -v tests/test_data_quality.py
+```
+
+#### 6. Вход в Apache Superset
 * **URL:** `http://localhost:8088`
 * **Логин:** `admin`
 * **Пароль:** `admin`
@@ -149,6 +171,7 @@ python etl/pipeline.py data/raw/avito_clean_final_full.xlsx
 ## 📁 Структура репозитория
 
 ```text
+├── run_all.ps1                     # One-click автоматический запуск всего проекта и тестов
 ├── docker-compose.yml              # Оркестрация стека (Postgres, ClickHouse, Redis, Superset)
 ├── docker/
 │   ├── superset/
@@ -168,6 +191,8 @@ python etl/pipeline.py data/raw/avito_clean_final_full.xlsx
 ├── etl/
 │   ├── pipeline.py                 # Полный ETL: очистка, feature engineering, загрузка
 │   └── requirements.txt            # Python-зависимости ETL
+├── tests/
+│   └── test_data_quality.py        # 12 автоматических тестов Data Quality (pytest)
 ├── docs/
 │   └── images/                     # Реальные скриншоты интерфейса дашборда
 ├── dashboards/
