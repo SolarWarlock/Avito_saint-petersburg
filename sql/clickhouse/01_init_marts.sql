@@ -42,3 +42,93 @@ ORDER BY (district, item_id);
 -- ========================================================
 CREATE DATABASE IF NOT EXISTS pg_dwh
 ENGINE = PostgreSQL('postgres:5432', 'avito_dwh', 'avito_user', 'avito_password');
+
+-- ========================================================
+-- Product Analytical View 1: Underpriced Deals (Flips & Bargains)
+-- ========================================================
+CREATE OR REPLACE VIEW avito_marts.mart_underpriced_deals AS
+WITH cluster_stats AS (
+    SELECT
+        district,
+        metro1,
+        rooms_count,
+        count()                                 AS cluster_listings,
+        median(price_per_sqm)                   AS cluster_median_sqm
+    FROM avito_marts.mart_avito_bi_flat
+    WHERE object_type = 'Квартира'
+      AND metro1 != 'Без метро'
+      AND title NOT ILIKE '%аукцион%'
+      AND title NOT ILIKE '%доля%'
+    GROUP BY district, metro1, rooms_count
+    HAVING count() >= 8
+),
+ranked_deals AS (
+    SELECT
+        f.item_id,
+        f.title,
+        f.district,
+        f.metro1,
+        f.rooms_count,
+        f.total_area,
+        f.floor_current,
+        f.floor_total,
+        f.condition_unified,
+        f.building_era,
+        f.price,
+        round(f.price_per_sqm)                  AS price_per_sqm,
+        round(c.cluster_median_sqm)             AS cluster_median_sqm,
+        round((1 - f.price_per_sqm / c.cluster_median_sqm) * 100, 1) AS discount_pct,
+        round((c.cluster_median_sqm - f.price_per_sqm) * f.total_area) AS potential_gain_rub,
+        row_number() OVER (
+            PARTITION BY f.district 
+            ORDER BY (c.cluster_median_sqm - f.price_per_sqm) DESC
+        ) AS deal_rank
+    FROM avito_marts.mart_avito_bi_flat f
+    JOIN cluster_stats c 
+      ON f.district = c.district 
+     AND f.metro1 = c.metro1 
+     AND f.rooms_count = c.rooms_count
+    WHERE f.object_type = 'Квартира'
+      AND f.title NOT ILIKE '%аукцион%'
+      AND f.title NOT ILIKE '%доля%'
+      AND f.price_per_sqm < c.cluster_median_sqm * 0.75
+)
+SELECT 
+    item_id,
+    title,
+    district,
+    metro1,
+    rooms_count,
+    total_area,
+    floor_current,
+    floor_total,
+    condition_unified,
+    building_era,
+    price,
+    price_per_sqm,
+    cluster_median_sqm,
+    discount_pct,
+    potential_gain_rub,
+    deal_rank
+FROM ranked_deals
+WHERE deal_rank <= 5;
+
+-- ========================================================
+-- Product Analytical View 2: Floor Penalty Matrix
+-- ========================================================
+CREATE OR REPLACE VIEW avito_marts.mart_floor_penalty_matrix AS
+SELECT
+    district,
+    count()                                                         AS listings_count,
+    round(medianIf(price_per_sqm, floor_category = 'Первый'))       AS first_floor_med_sqm,
+    round(medianIf(price_per_sqm, floor_category = 'Средний'))      AS mid_floor_med_sqm,
+    round(medianIf(price_per_sqm, floor_category = 'Последний'))    AS last_floor_med_sqm,
+    round((1 - medianIf(price_per_sqm, floor_category = 'Первый') / 
+               nullif(medianIf(price_per_sqm, floor_category = 'Средний'), 0)) * 100, 1) AS first_floor_discount_pct,
+    round((1 - medianIf(price_per_sqm, floor_category = 'Последний') / 
+               nullif(medianIf(price_per_sqm, floor_category = 'Средний'), 0)) * 100, 1) AS last_floor_discount_pct
+FROM avito_marts.mart_avito_bi_flat
+WHERE object_type = 'Квартира'
+GROUP BY district
+HAVING count() >= 300;
+

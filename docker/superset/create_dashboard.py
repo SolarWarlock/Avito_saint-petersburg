@@ -1,10 +1,12 @@
 """
 Automated Dashboard & Chart Generation for Apache Superset
-Creates the complete Avito Real Estate Analytics Dashboard with:
-- Avito corporate branding (colors, modern custom CSS, hero banner)
-- Interactive Native Filter Bar (District, Rooms, Market Type, Object Type, Era, Metro Distance, Price Range)
+Creates the complete Avito Real Estate Analytics Platform with:
+- Multi-Tab Layout:
+    Tab 1: 📊 Мониторинг рынка (11 графиков + KPI городского масштаба)
+    Tab 2: 💡 Инвестиции и продуктовая аналитика (Топ-лоты со скидкой >=25%, матрица этажей, арбитраж ремонта)
+- Avito corporate branding (colors, modern custom CSS, hero banners)
+- Interactive Native Filter Bar cross-filtering both datasets (District, Rooms, Market, Object Type, Era, Metro, Price)
 - Full Cross-Filtering across charts
-- Polished chart axes without label collision
 """
 
 import json
@@ -18,23 +20,36 @@ with app.app_context():
     from superset.models.dashboard import Dashboard
     from superset.connectors.sqla.models import SqlaTable
 
-    # 1. Fetch the ClickHouse BI dataset
-    table = db.session.query(SqlaTable).filter_by(table_name="mart_avito_bi_flat").first()
-    if not table:
+    # 1. Fetch Datasets
+    main_table = db.session.query(SqlaTable).filter_by(table_name="mart_avito_bi_flat").first()
+    if not main_table:
         raise ValueError("Dataset 'mart_avito_bi_flat' not found in Superset!")
 
-    dataset_id = table.id
-    dataset_uuid = str(table.uuid)
-    print(f"Using dataset: {table.table_name} (ID: {dataset_id}, UUID: {dataset_uuid})")
+    deals_table = db.session.query(SqlaTable).filter_by(table_name="mart_underpriced_deals").first()
+    if not deals_table:
+        raise ValueError("Dataset 'mart_underpriced_deals' not found in Superset!")
+
+    main_id = main_table.id
+    main_uuid = str(main_table.uuid)
+
+    deals_id = deals_table.id
+    deals_uuid = str(deals_table.uuid)
+
+    print(f"Using Main Dataset: {main_table.table_name} (ID: {main_id})")
+    print(f"Using Deals Dataset: {deals_table.table_name} (ID: {deals_id})")
 
     # 2. Define All Slices
     charts_def = [
+        # =====================================================================
+        # TAB 1: Мониторинг рынка
+        # =====================================================================
         # --- ROW 1: KPIs ---
         {
             "slice_name": "Всего проверенных объявлений",
             "viz_type": "big_number_total",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "big_number_total",
                 "metric": "listings_count",
                 "subheader": "Уникальные объекты после дедупликации",
@@ -42,12 +57,9 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
-                "queries": [{
-                    "metrics": ["listings_count"],
-                    "is_timeseries": False
-                }],
+                "queries": [{"metrics": ["listings_count"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
@@ -55,8 +67,9 @@ with app.app_context():
         {
             "slice_name": "Медианная цена кв. метра",
             "viz_type": "big_number_total",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "big_number_total",
                 "metric": "median_price_per_sqm",
                 "subheader": "Рублей за 1 м² жилья",
@@ -64,12 +77,9 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
-                "queries": [{
-                    "metrics": ["median_price_per_sqm"],
-                    "is_timeseries": False
-                }],
+                "queries": [{"metrics": ["median_price_per_sqm"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
@@ -77,8 +87,9 @@ with app.app_context():
         {
             "slice_name": "Медианный бюджет квартиры",
             "viz_type": "big_number_total",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "big_number_total",
                 "metric": "median_total_price",
                 "subheader": "Медианная стоимость квартиры",
@@ -86,12 +97,9 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
-                "queries": [{
-                    "metrics": ["median_total_price"],
-                    "is_timeseries": False
-                }],
+                "queries": [{"metrics": ["median_total_price"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
@@ -99,8 +107,9 @@ with app.app_context():
         {
             "slice_name": "Медианная площадь жилья",
             "viz_type": "big_number_total",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "big_number_total",
                 "metric": "median_area",
                 "subheader": "Квадратных метров (м²)",
@@ -108,23 +117,21 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
-                "queries": [{
-                    "metrics": ["median_area"],
-                    "is_timeseries": False
-                }],
+                "queries": [{"metrics": ["median_area"], "is_timeseries": False}],
                 "result_format": "json",
                 "result_type": "full"
             }
         },
 
-        # --- ROW 2: Primary Analytics ---
+        # --- ROW 2: District Ranking & Rooms ---
         {
             "slice_name": "Медианная стоимость м² по районам СПб",
             "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "echarts_timeseries_bar",
                 "x_axis": "district",
                 "time_grain_sqla": None,
@@ -146,7 +153,7 @@ with app.app_context():
                 "order_desc": True
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["district"],
@@ -164,8 +171,9 @@ with app.app_context():
         {
             "slice_name": "Структура предложения по комнатности",
             "viz_type": "pie",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "pie",
                 "metric": "listings_count",
                 "groupby": ["rooms_count"],
@@ -175,7 +183,7 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["rooms_count"],
@@ -191,8 +199,9 @@ with app.app_context():
         {
             "slice_name": "Влияние удаленности от метро на цену м²",
             "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "echarts_timeseries_bar",
                 "x_axis": "metro_time_group",
                 "time_grain_sqla": None,
@@ -214,7 +223,7 @@ with app.app_context():
                 "order_desc": True
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["metro_time_group"],
@@ -232,8 +241,9 @@ with app.app_context():
         {
             "slice_name": "Цены м² по эпохам постройки",
             "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "echarts_timeseries_bar",
                 "x_axis": "building_era",
                 "time_grain_sqla": None,
@@ -255,7 +265,7 @@ with app.app_context():
                 "order_desc": True
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["building_era"],
@@ -271,12 +281,13 @@ with app.app_context():
             }
         },
 
-        # --- ROW 4: Renovation & Metro Leaderboard ---
+        # --- ROW 4: Renovation Premium & Top 15 Metro Stations ---
         {
             "slice_name": "Премия за ремонт (цена м² по состоянию)",
             "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "echarts_timeseries_bar",
                 "x_axis": "condition_unified",
                 "time_grain_sqla": None,
@@ -288,7 +299,7 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Тип отделки / ремонта",
-                "x_axis_title_margin": 75,
+                "x_axis_title_margin": 50,
                 "y_axis_title": "Медиана ₽ / м²",
                 "y_axis_title_margin": 65,
                 "y_axis_title_position": "Left",
@@ -298,7 +309,7 @@ with app.app_context():
                 "order_desc": True
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["condition_unified"],
@@ -316,18 +327,22 @@ with app.app_context():
         {
             "slice_name": "Топ-15 станций метро по стоимости кв. метра",
             "viz_type": "table",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "table",
                 "groupby": ["metro1"],
                 "metrics": ["median_price_per_sqm", "listings_count", "median_total_price"],
+                "order_by_cols": ['["median_price_per_sqm", false]'],
                 "row_limit": 15,
-                "order_desc": True,
                 "include_search": True,
+                "show_cell_bars": True,
+                "color_pn": True,
+                "table_timestamp_format": "smart_date",
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": ["metro1"],
@@ -342,12 +357,13 @@ with app.app_context():
             }
         },
 
-        # --- ROW 5: Detailed Listings Grid ---
+        # --- ROW 5: Detailed Listings Table ---
         {
-            "slice_name": "Реестр объявлений с детализацией параметров",
+            "slice_name": "Реестр проверенных объявлений",
             "viz_type": "table",
+            "datasource_id": main_id,
             "params": {
-                "datasource": f"{dataset_id}__table",
+                "datasource": f"{main_id}__table",
                 "viz_type": "table",
                 "all_columns": [
                     "item_id", "title", "district", "metro1", "time1", 
@@ -361,7 +377,7 @@ with app.app_context():
                 "time_range": "No filter"
             },
             "query_context": {
-                "datasource": {"id": dataset_id, "type": "table"},
+                "datasource": {"id": main_id, "type": "table"},
                 "force": False,
                 "queries": [{
                     "columns": [
@@ -373,6 +389,217 @@ with app.app_context():
                     "order_desc": True,
                     "row_limit": 50,
                     "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+
+        # =====================================================================
+        # TAB 2: Инвестиции и продуктовая аналитика
+        # =====================================================================
+        # --- TAB 2 ROW 1: Product KPIs ---
+        {
+            "slice_name": "Найдено инвестиционных лотов",
+            "viz_type": "big_number_total",
+            "datasource_id": deals_id,
+            "params": {
+                "datasource": f"{deals_id}__table",
+                "viz_type": "big_number_total",
+                "metric": "deals_count",
+                "subheader": "Дисконт >= 25% к медиане кластера",
+                "y_axis_format": ",d",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": deals_id, "type": "table"},
+                "force": False,
+                "queries": [{"metrics": ["deals_count"], "is_timeseries": False}],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+        {
+            "slice_name": "Средний дисконт к рынку",
+            "viz_type": "big_number_total",
+            "datasource_id": deals_id,
+            "params": {
+                "datasource": f"{deals_id}__table",
+                "viz_type": "big_number_total",
+                "metric": "avg_discount_pct",
+                "subheader": "Средняя скидка на отобранный лот",
+                "y_axis_format": ".1f%",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": deals_id, "type": "table"},
+                "force": False,
+                "queries": [{"metrics": ["avg_discount_pct"], "is_timeseries": False}],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+        {
+            "slice_name": "Максимальный дисконт",
+            "viz_type": "big_number_total",
+            "datasource_id": deals_id,
+            "params": {
+                "datasource": f"{deals_id}__table",
+                "viz_type": "big_number_total",
+                "metric": "max_discount_pct",
+                "subheader": "Рекордная недооценка лота",
+                "y_axis_format": ".1f%",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": deals_id, "type": "table"},
+                "force": False,
+                "queries": [{"metrics": ["max_discount_pct"], "is_timeseries": False}],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+        {
+            "slice_name": "Потенциал добавленной стоимости",
+            "viz_type": "big_number_total",
+            "datasource_id": deals_id,
+            "params": {
+                "datasource": f"{deals_id}__table",
+                "viz_type": "big_number_total",
+                "metric": "total_potential_gain",
+                "subheader": "Суммарный потенциал капитализации",
+                "y_axis_format": "$,.0f",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": deals_id, "type": "table"},
+                "force": False,
+                "queries": [{"metrics": ["total_potential_gain"], "is_timeseries": False}],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+
+        # --- TAB 2 ROW 2: Deals Table ---
+        {
+            "slice_name": "Топ-лоты под флиппинг (скидка от 25% к району)",
+            "viz_type": "table",
+            "datasource_id": deals_id,
+            "params": {
+                "datasource": f"{deals_id}__table",
+                "viz_type": "table",
+                "all_columns": [
+                    "district", "metro1", "title", "rooms_count", "total_area", 
+                    "floor_current", "floor_total", "condition_unified", "building_era", 
+                    "price", "price_per_sqm", "cluster_median_sqm", "discount_pct", "potential_gain_rub"
+                ],
+                "order_by_cols": ['["discount_pct", false]'],
+                "row_limit": 50,
+                "include_search": True,
+                "show_cell_bars": True,
+                "color_pn": True,
+                "table_timestamp_format": "smart_date",
+                "time_range": "No filter"
+            },
+            "query_context": {
+                "datasource": {"id": deals_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": [
+                        "district", "metro1", "title", "rooms_count", "total_area", 
+                        "floor_current", "floor_total", "condition_unified", "building_era", 
+                        "price", "price_per_sqm", "cluster_median_sqm", "discount_pct", "potential_gain_rub"
+                    ],
+                    "orderby": [["discount_pct", False]],
+                    "order_desc": True,
+                    "row_limit": 50,
+                    "is_timeseries": False
+                }],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+
+        # --- TAB 2 ROW 3: Floor Matrix & Renovation Value-Add ---
+        {
+            "slice_name": "Матрица стоимости этажей по районам (Первый / Средний / Последний)",
+            "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
+            "params": {
+                "datasource": f"{main_id}__table",
+                "viz_type": "echarts_timeseries_bar",
+                "x_axis": "district",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
+                "metrics": ["median_price_per_sqm"],
+                "groupby": ["floor_category"],
+                "orientation": "vertical",
+                "show_value": False,
+                "y_axis_format": ",.0f",
+                "x_axis_title": "Район Санкт-Петербурга",
+                "x_axis_title_margin": 65,
+                "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": -35,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
+                "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": main_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["district", "floor_category"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
+                }],
+                "result_format": "json",
+                "result_type": "full"
+            }
+        },
+        {
+            "slice_name": "Экономика ремонта: цена м² по эпохам и состоянию",
+            "viz_type": "echarts_timeseries_bar",
+            "datasource_id": main_id,
+            "params": {
+                "datasource": f"{main_id}__table",
+                "viz_type": "echarts_timeseries_bar",
+                "x_axis": "building_era",
+                "time_grain_sqla": None,
+                "granularity_sqla": "loaded_at",
+                "time_range": "No filter",
+                "metrics": ["median_price_per_sqm"],
+                "groupby": ["condition_unified"],
+                "orientation": "vertical",
+                "show_value": False,
+                "y_axis_format": ",.0f",
+                "x_axis_title": "Эпоха постройки дома",
+                "x_axis_title_margin": 65,
+                "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": 0,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
+                "order_desc": True
+            },
+            "query_context": {
+                "datasource": {"id": main_id, "type": "table"},
+                "force": False,
+                "queries": [{
+                    "columns": ["building_era", "condition_unified"],
+                    "metrics": ["median_price_per_sqm"],
+                    "orderby": [["median_price_per_sqm", False]],
+                    "order_desc": True,
+                    "row_limit": 100,
+                    "is_timeseries": False,
+                    "post_processing": [{"operation": "flatten"}]
                 }],
                 "result_format": "json",
                 "result_type": "full"
@@ -390,12 +617,13 @@ with app.app_context():
         else:
             qc_json = None
 
+        ds_id = c_def["datasource_id"]
         if not slice_obj:
             slice_obj = Slice(
                 slice_name=c_def["slice_name"],
                 viz_type=c_def["viz_type"],
                 datasource_type="table",
-                datasource_id=dataset_id,
+                datasource_id=ds_id,
                 params=json.dumps(c_def["params"]),
                 query_context=qc_json
             )
@@ -405,6 +633,7 @@ with app.app_context():
         else:
             slice_obj.params = json.dumps(c_def["params"])
             slice_obj.viz_type = c_def["viz_type"]
+            slice_obj.datasource_id = ds_id
             slice_obj.query_context = qc_json
             db.session.commit()
             print(f"Updated Chart: {slice_obj.slice_name} (ID: {slice_obj.id})")
@@ -412,13 +641,18 @@ with app.app_context():
 
     chart_ids = [s.id for s in created_slices]
 
-    # 3. Assemble Dashboard Layout
-    kpi_slices = created_slices[0:4]
-    market_slices = created_slices[4:6]
-    metro_era_slices = created_slices[6:8]
-    reno_top_slices = created_slices[8:10]
-    table_slice = created_slices[10]
+    # Split into Tab 1 and Tab 2 slices
+    t1_kpis = created_slices[0:4]
+    t1_market = created_slices[4:6]
+    t1_metro_era = created_slices[6:8]
+    t1_reno_top = created_slices[8:10]
+    t1_table = created_slices[10]
 
+    t2_kpis = created_slices[11:15]
+    t2_deals = created_slices[15]
+    t2_charts = created_slices[16:18]
+
+    # 3. Assemble Dashboard Layout with TABS
     header_html = (
         '<div style="background: linear-gradient(135deg, #0077CC 0%, #00AAFF 60%, #00C48C 100%); '
         'border-radius: 12px; padding: 20px 24px; color: #ffffff; '
@@ -434,7 +668,26 @@ with app.app_context():
         '    </div>'
         '    <h1 style="margin: 0; font-size: 23px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Мониторинг рынка жилой недвижимости Санкт-Петербурга</h1>'
         '    <div style="margin-top: 5px; font-size: 13px; color: rgba(255,255,255,0.92);">'
-        '      <strong>30 994 валидированных объекта</strong> без дублей и аномалий. Выберите фильтры на левой панели для интерактивного анализа.'
+        '      <strong>30 994 валидированных объекта</strong> без дублей и аномалий. Используйте вкладки ниже для переключения между мониторингом и инвест-аналитикой.'
+        '    </div>'
+        '  </div>'
+        '</div>'
+    )
+
+    prod_header_html = (
+        '<div style="background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #00AAFF 100%); '
+        'border-radius: 12px; padding: 18px 24px; color: #ffffff; '
+        'box-shadow: 0 4px 18px rgba(0, 119, 204, 0.2); '
+        'display: flex; justify-content: space-between; align-items: center;">'
+        '  <div>'
+        '    <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #00E5FF; margin-bottom: 4px;">'
+        '      ⚡ ПРОДУКТОВЫЙ МОДУЛЬ &bull; АЛГОРИТМИЧЕСКИЙ СКОРИНГ'
+        '    </div>'
+        '    <h2 style="margin: 0; font-size: 19px; font-weight: 800; color: #ffffff;">'
+        '      Инвестиционные находки под флиппинг, матрица этажей и арбитраж отделки'
+        '    </h2>'
+        '    <div style="margin-top: 4px; font-size: 13px; color: rgba(255,255,255,0.88);">'
+        '      Алгоритм находит лоты с дисконтом &ge; 25% относительно локального микрокластера (Район + Метро + Комнатность). Оценивайте штраф первого этажа и окупаемость ремонта.'
         '    </div>'
         '  </div>'
         '</div>'
@@ -457,11 +710,7 @@ with app.app_context():
         "GRID_ID": {
             "children": [
                 "ROW-header",
-                "ROW-kpis",
-                "ROW-market",
-                "ROW-metro-era",
-                "ROW-reno-top",
-                "ROW-table"
+                "TABS-main"
             ],
             "id": "GRID_ID",
             "parents": ["ROOT_ID"],
@@ -486,11 +735,67 @@ with app.app_context():
             },
             "parents": ["ROOT_ID", "GRID_ID", "ROW-header"],
             "type": "MARKDOWN"
+        },
+        "TABS-main": {
+            "children": ["TAB-monitoring", "TAB-product"],
+            "id": "TABS-main",
+            "meta": {},
+            "parents": ["ROOT_ID", "GRID_ID"],
+            "type": "TABS"
+        },
+        "TAB-monitoring": {
+            "children": [
+                "ROW-kpis",
+                "ROW-market",
+                "ROW-metro-era",
+                "ROW-reno-top",
+                "ROW-table"
+            ],
+            "id": "TAB-monitoring",
+            "meta": {
+                "text": "📊 Мониторинг рынка"
+            },
+            "parents": ["ROOT_ID", "GRID_ID", "TABS-main"],
+            "type": "TAB"
+        },
+        "TAB-product": {
+            "children": [
+                "ROW-prod-header",
+                "ROW-prod-kpis",
+                "ROW-prod-deals",
+                "ROW-prod-charts"
+            ],
+            "id": "TAB-product",
+            "meta": {
+                "text": "💡 Инвестиции и продуктовая аналитика"
+            },
+            "parents": ["ROOT_ID", "GRID_ID", "TABS-main"],
+            "type": "TAB"
+        },
+        "ROW-prod-header": {
+            "children": ["MARKDOWN-prod-header"],
+            "id": "ROW-prod-header",
+            "meta": {
+                "background": "BACKGROUND_TRANSPARENT"
+            },
+            "parents": ["ROOT_ID", "GRID_ID", "TABS-main", "TAB-product"],
+            "type": "ROW"
+        },
+        "MARKDOWN-prod-header": {
+            "children": [],
+            "id": "MARKDOWN-prod-header",
+            "meta": {
+                "code": prod_header_html,
+                "height": 12,
+                "width": 12
+            },
+            "parents": ["ROOT_ID", "GRID_ID", "TABS-main", "TAB-product", "ROW-prod-header"],
+            "type": "MARKDOWN"
         }
     }
 
-    # Helper to add standard chart rows
-    def add_chart_row(row_id, slice_width_pairs, row_height=52):
+    # Helper to add chart rows under specific tab
+    def add_tab_row(tab_id, row_id, slice_width_pairs, row_height=52):
         children = []
         for sl, w in slice_width_pairs:
             chart_key = f"CHART-{sl.id}"
@@ -504,7 +809,7 @@ with app.app_context():
                     "sliceName": sl.slice_name,
                     "width": w
                 },
-                "parents": ["ROOT_ID", "GRID_ID", row_id],
+                "parents": ["ROOT_ID", "GRID_ID", "TABS-main", tab_id, row_id],
                 "type": "CHART"
             }
         position_data[row_id] = {
@@ -513,17 +818,23 @@ with app.app_context():
             "meta": {
                 "background": "BACKGROUND_TRANSPARENT"
             },
-            "parents": ["ROOT_ID", "GRID_ID"],
+            "parents": ["ROOT_ID", "GRID_ID", "TABS-main", tab_id],
             "type": "ROW"
         }
 
-    add_chart_row("ROW-kpis", [(s, 3) for s in kpi_slices], row_height=30)
-    add_chart_row("ROW-market", [(market_slices[0], 8), (market_slices[1], 4)], row_height=54)
-    add_chart_row("ROW-metro-era", [(metro_era_slices[0], 6), (metro_era_slices[1], 6)], row_height=54)
-    add_chart_row("ROW-reno-top", [(reno_top_slices[0], 6), (reno_top_slices[1], 6)], row_height=54)
-    add_chart_row("ROW-table", [(table_slice, 12)], row_height=65)
+    # Tab 1: Market Monitoring
+    add_tab_row("TAB-monitoring", "ROW-kpis", [(s, 3) for s in t1_kpis], row_height=30)
+    add_tab_row("TAB-monitoring", "ROW-market", [(t1_market[0], 8), (t1_market[1], 4)], row_height=54)
+    add_tab_row("TAB-monitoring", "ROW-metro-era", [(t1_metro_era[0], 6), (t1_metro_era[1], 6)], row_height=54)
+    add_tab_row("TAB-monitoring", "ROW-reno-top", [(t1_reno_top[0], 6), (t1_reno_top[1], 6)], row_height=54)
+    add_tab_row("TAB-monitoring", "ROW-table", [(t1_table, 12)], row_height=65)
 
-    # 4. Native Filter Configuration
+    # Tab 2: Product & Investment Analytics
+    add_tab_row("TAB-product", "ROW-prod-kpis", [(s, 3) for s in t2_kpis], row_height=30)
+    add_tab_row("TAB-product", "ROW-prod-deals", [(t2_deals, 12)], row_height=65)
+    add_tab_row("TAB-product", "ROW-prod-charts", [(t2_charts[0], 6), (t2_charts[1], 6)], row_height=54)
+
+    # 4. Multi-Dataset Native Filter Configuration
     native_filters = [
         {
             "id": "NATIVE_FILTER-district",
@@ -531,8 +842,13 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
+                    "column": {"name": "district"}
+                },
+                {
+                    "datasetId": deals_id,
+                    "datasetUuid": deals_uuid,
                     "column": {"name": "district"}
                 }
             ],
@@ -557,8 +873,13 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
+                    "column": {"name": "rooms_count"}
+                },
+                {
+                    "datasetId": deals_id,
+                    "datasetUuid": deals_uuid,
                     "column": {"name": "rooms_count"}
                 }
             ],
@@ -583,8 +904,8 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
                     "column": {"name": "market_type"}
                 }
             ],
@@ -609,8 +930,8 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
                     "column": {"name": "object_type"}
                 }
             ],
@@ -635,8 +956,13 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
+                    "column": {"name": "building_era"}
+                },
+                {
+                    "datasetId": deals_id,
+                    "datasetUuid": deals_uuid,
                     "column": {"name": "building_era"}
                 }
             ],
@@ -661,8 +987,8 @@ with app.app_context():
             "filterType": "filter_select",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
                     "column": {"name": "metro_time_group"}
                 }
             ],
@@ -687,8 +1013,8 @@ with app.app_context():
             "filterType": "filter_range",
             "targets": [
                 {
-                    "datasetId": dataset_id,
-                    "datasetUuid": dataset_uuid,
+                    "datasetId": main_id,
+                    "datasetUuid": main_uuid,
                     "column": {"name": "price_per_sqm"}
                 }
             ],
@@ -745,6 +1071,9 @@ with app.app_context():
             "4": "#A521FF",
             "5": "#00C48C",
             "6": "#454E7C",
+            "Первый": "#FF335F",
+            "Средний": "#00AAFF",
+            "Последний": "#97D700",
             "Вторичка": "#00AAFF",
             "Новостройка": "#97D700"
         },
@@ -757,10 +1086,10 @@ with app.app_context():
         "native_filter_configuration": native_filters
     }
 
-    # 5. Modern Avito Custom CSS
+    # 5. Modern Avito Custom CSS with Tabs Styling
     avito_css = """
 /* =========================================================
-   AVITO BRAND THEME STYLING
+   AVITO BRAND THEME STYLING & MULTI-TAB DESIGN
    ========================================================= */
 
 /* Global Page Background and Font */
@@ -781,6 +1110,36 @@ body {
     font-weight: 800 !important;
     color: #1A1F2C !important;
     font-size: 20px !important;
+}
+
+/* Tab Navigation Styling */
+.ant-tabs-nav-wrap, .nav-tabs {
+    margin-top: 8px !important;
+    margin-bottom: 16px !important;
+    border-bottom: 2px solid #E2E8F0 !important;
+}
+
+.ant-tabs-tab {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s ease !important;
+}
+
+.ant-tabs-tab:hover {
+    color: #00AAFF !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #0077CC !important;
+    font-weight: 800 !important;
+}
+
+.ant-tabs-ink-bar {
+    background: #00AAFF !important;
+    height: 3px !important;
+    border-radius: 3px !important;
 }
 
 /* Chart and Markdown Cards */
@@ -890,4 +1249,4 @@ body {
         db.session.commit()
         print(f"Updated Dashboard '{dashboard.dashboard_title}' (ID: {dashboard.id}, URL: /superset/dashboard/{dash_slug}/)")
 
-    print("=== AVITO BRAND STYLING & NATIVE FILTERS CONFIGURED SUCCESSFULLY ===")
+    print("=== AVITO MULTI-TAB DASHBOARD WITH PRODUCT ANALYTICS CREATED SUCCESSFULLY ===")
