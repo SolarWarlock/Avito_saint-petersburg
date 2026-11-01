@@ -7,7 +7,7 @@
 [![Testing: Pytest](https://img.shields.io/badge/Tests-12%20Passed%20(Pytest)-brightgreen?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 [![Deploy: Docker Compose](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-Продакшн-ориентированный аналитический проект полного цикла: от очистки и валидации сырых данных парсинга **33 000+ объявлений Авито**, проектирования двухуровневого хранилища данных (**PostgreSQL ODS + ClickHouse OLAP**) до интерактивного BI-дашборда в корпоративной дизайн-системе **Apache Superset**, прикладных продуктовых SQL-моделей и автотестов качества данных (**Data Quality & Integrity Testing**).
+Продакшн-ориентированный аналитический проект полного цикла: от очистки и валидации сырых данных парсинга **33 000+ объявлений Авито**, проектирования двухуровневого хранилища данных **PostgreSQL ODS + ClickHouse** до интерактивного BI-дашборда в корпоративной дизайн-системе **Apache Superset**, прикладных продуктовых SQL-моделей и автотестов качества данных.
 
 ---
 
