@@ -111,3 +111,4 @@ Write-Host "    - ClickHouse: localhost:8123 (HTTP) / 9000 (Native) [user: avito
 Write-Host "    - PostgreSQL: localhost:5433 [db: avito_dwh, user: avito_user]" -ForegroundColor Gray
 Write-Host "=====================================================================" -ForegroundColor Green
 Write-Host ""
+
