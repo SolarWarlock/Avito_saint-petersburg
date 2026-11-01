@@ -131,7 +131,13 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Район Санкт-Петербурга",
+                "x_axis_title_margin": 75,
                 "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": 45,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
                 "order_desc": True
             },
             "query_context": {
@@ -193,7 +199,13 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Время пешком до метро",
+                "x_axis_title_margin": 45,
                 "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": 0,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
                 "order_desc": True
             },
             "query_context": {
@@ -228,7 +240,13 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Период постройки",
+                "x_axis_title_margin": 55,
                 "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": 25,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
                 "order_desc": True
             },
             "query_context": {
@@ -265,7 +283,13 @@ with app.app_context():
                 "show_value": True,
                 "y_axis_format": ",.0f",
                 "x_axis_title": "Тип отделки / ремонта",
+                "x_axis_title_margin": 60,
                 "y_axis_title": "Медиана ₽ / м²",
+                "y_axis_title_margin": 65,
+                "y_axis_title_position": "Left",
+                "xAxisLabelRotation": 30,
+                "xAxisLabelInterval": 0,
+                "truncateXAxis": False,
                 "order_desc": True
             },
             "query_context": {
@@ -315,7 +339,7 @@ with app.app_context():
 
         # --- ROW 5: Detailed Listings Grid ---
         {
-            "slice_name": "Реестр объявлений (с детализацией параметров)",
+            "slice_name": "Реестр объявлений с детализацией параметров",
             "viz_type": "table",
             "params": {
                 "datasource": f"{dataset_id}__table",
@@ -398,7 +422,7 @@ with app.app_context():
         "HEADER_ID": {
             "id": "HEADER_ID",
             "meta": {
-                "text": "Авито Недвижимость — Анализ рынка жилья (Санкт-Петербург)"
+                "text": "Авито Недвижимость - Анализ рынка жилья Санкт-Петербурга"
             },
             "type": "HEADER"
         },
@@ -428,7 +452,7 @@ with app.app_context():
             "children": [],
             "id": "MARKDOWN-header",
             "meta": {
-                "code": "### 🏠 Авито Недвижимость: Мониторинг рынка жилья и ценообразования (Санкт-Петербург)\n*Аналитическая витрина DWH на стеке PostgreSQL 15 + ClickHouse MergeTree + Apache Superset. Очищено от выбросов и дедуплицировано по естественному `item_id`.*",
+                "code": "### 🏠 Авито Недвижимость: Мониторинг рынка жилья и ценообразования в Санкт-Петербурге\n*Аналитическая витрина, очищенная от выбросов и дедуплицировано по естественному `item_id`.*",
                 "height": 20,
                 "width": 12
             },
@@ -482,7 +506,7 @@ with app.app_context():
     }
 
     # 5. Create or Update Dashboard
-    dash_title = "Авито Недвижимость — Анализ рынка жилья (Санкт-Петербург)"
+    dash_title = "Авито Недвижимость - Анализ рынка жилья Санкт-Петербурга"
     dash_slug = "avito-spb-real-estate"
     dashboard = db.session.query(Dashboard).filter_by(slug=dash_slug).first()
 
