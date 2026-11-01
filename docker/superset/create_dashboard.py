@@ -481,7 +481,7 @@ with app.app_context():
             "id": "MARKDOWN-header",
             "meta": {
                 "code": header_html,
-                "height": 24,
+                "height": 12,
                 "width": 12
             },
             "parents": ["ROOT_ID", "GRID_ID", "ROW-header"],
