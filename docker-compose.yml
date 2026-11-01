@@ -102,6 +102,7 @@ services:
       PYTHONPATH: /app/pythonpath
     volumes:
       - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ./docker/superset/create_dashboard.py:/app/create_dashboard.py
       - superset_home:/app/superset_home
     depends_on:
       superset-init:
